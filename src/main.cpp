@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
+#include "pipeline.h"
 
 namespace po = boost::program_options;
 
@@ -8,7 +9,7 @@ int main(int argc, char *argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "Produce help message")
-        ("source", po::value<std::string>(), "Source of data ['KITTI', 'camera']"); 
+        ("param",po::value<std::string>(), "Path to YAML parameter file");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -18,11 +19,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (vm.count("source")) {
-        std::cout << "Specified source: " << vm["source"].as<std::string>() << ".\n";
+    if (vm.count("param")) {
+        std::cout << "Parameter filepath: " << vm["param"].as<std::string>() << ".\n";
+        cv::FileStorage param_node(vm["param"].as<std::string>(), cv::FileStorage::READ);
+        Pipeline pipeline(param_node);
     } else {
-        std::cout << "Data source was not set.\n";
+        std::cout << "Path to parameter file was not set.\n";
+        return 1;
     }
-
     return 0;
 }

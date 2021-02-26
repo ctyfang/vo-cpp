@@ -1,0 +1,4 @@
+%YAML:1.0
+source: kitti
+root_dir: /media/carter/Samsung_T5/vo_data/kitti
+buffer_size: 10
