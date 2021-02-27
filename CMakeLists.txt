@@ -7,10 +7,13 @@ find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS program_options REQUIRED)
 
+find_package(Python2 COMPONENTS Development NumPy)
+
 include_directories(include ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 file(GLOB SOURCES "src/*.cpp")
 
 add_executable(vo ${SOURCES})
 
-target_link_libraries(vo ${OpenCV_LIBS} ${Boost_LIBRARIES})
+target_include_directories(vo PRIVATE ${Python2_INCLUDE_DIRS} ${Python2_NumPy_INCLUDE_DIRS})
+target_link_libraries(vo ${OpenCV_LIBS} ${Boost_LIBRARIES} Python2::Python Python2::NumPy)
