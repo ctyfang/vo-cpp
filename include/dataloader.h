@@ -8,6 +8,8 @@
 #include <memory>
 #include <thread>
 #include <mutex>
+#include <fstream>
+#include <string>
 
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
@@ -18,9 +20,11 @@ using namespace std::filesystem;
 class Dataloader {
  public:
     bool Read(std::shared_ptr<cv::Mat>& img_ptr);
+
+    cv::Mat K_;
  protected:
     virtual void UpdateBuffer() = 0;
-    virtual void ParseCalibration() = 0;
+    virtual void ParseCalibration(std::string calib_path) = 0;
 
     int buffer_size_;
     std::vector<std::shared_ptr<cv::Mat>> buffer_;
@@ -32,13 +36,13 @@ class KittiLoader : public virtual Dataloader {
  public:
     KittiLoader(std::string root_dir, int buffer_size = 10);
     ~KittiLoader();
- private:
-    void UpdateBuffer();
-    void ParseCalibration();
 
-    std::string image_dir_;
-    int image_index_ = 0;
-    cv::Mat K_;
+ private:
+   void UpdateBuffer();
+   void ParseCalibration(std::string calib_path);
+
+   std::string image_dir_;
+   int image_index_ = 0;
 };
 
 #endif  // DATALOADER_H_

@@ -21,7 +21,8 @@ KittiLoader::KittiLoader(std::string root_dir, int buffer_size) {
     image_dir_ = root_dir + "/00/image_0";
     std::cout << "Image Directory: " << std::string(image_dir_) << "\n";
     buffer_thread_ = std::make_unique<std::thread>(&KittiLoader::UpdateBuffer, this);
-    ParseCalibration();
+    
+    ParseCalibration(root_dir + "/00/calib.txt");
 }
 
 KittiLoader::~KittiLoader() {
@@ -42,6 +43,21 @@ void KittiLoader::UpdateBuffer() {
     }
 }
 
-void KittiLoader::ParseCalibration() {
-    // TODO: implement
+void KittiLoader::ParseCalibration(std::string calib_path) {
+    std::ifstream calib_file(calib_path);
+    std::string P0_str;
+    std::getline(calib_file, P0_str);
+
+    std::vector<std::string> P0_elems;
+    std::stringstream ss(P0_str);
+    std::string item;
+    while (std::getline(ss, item, ' ')) {
+        P0_elems.push_back(item);
+    }
+
+    this->K_ = cv::Mat::eye(3, 3, CV_32F);
+    this->K_.at<float>(0, 0) = std::stof(P0_elems[1]);
+    this->K_.at<float>(0, 2) = std::stof(P0_elems[3]);
+    this->K_.at<float>(1, 1) = std::stof(P0_elems[6]);
+    this->K_.at<float>(1, 2) = std::stof(P0_elems[7]);
 }

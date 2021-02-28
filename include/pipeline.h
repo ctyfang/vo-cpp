@@ -2,6 +2,7 @@
 #define PIPELINE_H_
 
 #include <memory>
+#include <vector>
 
 #include "state.h"
 #include "dataloader.h"
