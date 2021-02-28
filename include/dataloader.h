@@ -1,7 +1,6 @@
 #ifndef DATALOADER_H_
 #define DATALOADER_H_
 
-#include <string>
 #include <vector>
 #include <iostream>
 #include <sstream>

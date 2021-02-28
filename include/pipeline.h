@@ -5,6 +5,7 @@
 
 #include "state.h"
 #include "dataloader.h"
+#include "extractor.h"
 #include "visualizer.h"
 
 class Pipeline {
@@ -17,7 +18,9 @@ class Pipeline {
  private:
     std::shared_ptr<State> state_;
     std::shared_ptr<Dataloader> dataloader_;
+    std::unique_ptr<Extractor> extractor_;
     std::unique_ptr<Visualizer> visualizer_;
+    int frame_index_ = 0;
 };
 
 #endif  // PIPELINE_H_
