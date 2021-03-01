@@ -11,10 +11,11 @@ Extractor::Extractor(const cv::Mat& K)
 void Extractor::ExtractSIFT(std::shared_ptr<cv::Mat> frame, std::vector<cv::KeyPoint> &keypoints,
                             cv::Mat &descriptors) {
     sift_->detectAndCompute(*frame, cv::Mat(), keypoints, descriptors);
+    frame_prev_ = frame->clone();
 }
 
 void Extractor::ExtractCorners(std::shared_ptr<cv::Mat> frame, std::vector<cv::KeyPoint> &keypoints, cv::Mat &descriptors) {
-
+    frame_prev_ = frame->clone();
 }
 
 void Extractor::MatchSIFT(const cv::Mat &descriptors_1, const cv::Mat &descriptors_2,
@@ -133,11 +134,39 @@ std::vector<cv::Point3f> Extractor::Triangulate(std::vector<cv::Point2f> keypoin
 
     // De-homogenize
     std::vector<cv::Point3f> landmarks;
-    for(int i=0; i<keypoints_1.size(); ++i) {
+    for (int i = 0; i < keypoints_1.size(); ++i) {
         float w = landmarks_homo.at<float>(3, i);
         landmarks.push_back(cv::Point3f(landmarks_homo.at<float>(0, i)/w,
                                         landmarks_homo.at<float>(1, i)/w,
                                         landmarks_homo.at<float>(2, i)/w));
     }
     return landmarks;
+}
+
+std::vector<uchar> Extractor::TrackKeypoints(std::shared_ptr<cv::Mat> frame_curr,
+                                             std::vector<cv::Point2f>& keypoints) {
+    std::vector<uchar> status;
+    std::vector<float> err;
+    cv::calcOpticalFlowPyrLK(frame_prev_, *frame_curr,
+                             keypoints, keypoints, status, err);
+    
+    // TODO: Bi-directional error checking
+    frame_prev_ = frame_curr->clone();
+
+    return status;
+}
+
+void Extractor::FilterKeypointsAndLandmarks(std::vector<cv::Point2f>& keypoints,
+                                            std::vector<cv::Point3f>& landmarks,
+                                            std::vector<uchar>& mask) {
+    int lambda_idx = 0;
+    keypoints.erase(std::remove_if(keypoints.begin(), keypoints.end(),
+                                   [mask, &lambda_idx](cv::Point2f kp){
+                                       return mask[lambda_idx++] == 0;
+                                   }), keypoints.end());
+    lambda_idx = 0;
+    landmarks.erase(std::remove_if(landmarks.begin(), landmarks.end(),
+                                   [mask, &lambda_idx](cv::Point3f lm){
+                                       return mask[lambda_idx++] == 0;
+                                   }), landmarks.end());
 }

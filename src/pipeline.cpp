@@ -40,19 +40,6 @@ void Pipeline::Initialize() {
     std::vector<std::vector<cv::DMatch>> matches;
     extractor_->MatchSIFT(desc_1, desc_2, matches);
 
-    // // DEBUG: Draw matches
-    // cv::Mat im_kp_1, im_kp_2, im_kps;
-    // cv::drawKeypoints(*frame_1, kp_1, im_kp_1);
-    // cv::drawKeypoints(*frame_2, kp_2, im_kp_2);
-    // cv::vconcat(im_kp_1, im_kp_2, im_kps);
-    // cv::imshow("Keypoints", im_kps);
-    // cv::waitKey(0);
-
-    // cv::Mat im_matches;
-    // cv::drawMatches(*frame_1, kp_1, *frame_2, kp_2, matches, im_matches);
-    // cv::imshow("Matches", im_matches);
-    // cv::waitKey(0);
-
     // Motion estimation
     std::vector<cv::Point2f> kp_1_m, kp_2_m, kp_1_nm, kp_2_nm;
     extractor_->FilterKeypoints(cv_kp_1, cv_kp_2, matches, kp_1_m, kp_2_m, kp_1_nm, kp_2_nm);
@@ -71,19 +58,32 @@ void Pipeline::Initialize() {
     cv::Mat t0 = cv::Mat::zeros(3, 1, CV_32F);
     std::vector<cv::Point3f> landmarks_new = extractor_->Triangulate(kp_1_m, kp_2_m,
                                                                      R0, t0, R, t);
-
     state_->landmarks.insert(state_->landmarks.begin(), landmarks_new.begin(), landmarks_new.end());
+
     // Visualize
     visualizer_->UpdateRender(frame_2);
 }
 
 void Pipeline::Update() {
-    // TODO: Implement continuous update and remove waitKey
-    cv::waitKey(0);
-
     std::shared_ptr<cv::Mat> frame_curr;
     bool ret = dataloader_->Read(frame_curr);
     if (ret) {
+        // Track keypoints
+        std::vector<uchar> tracking_mask = extractor_->TrackKeypoints(frame_curr, state_->kps);
+        extractor_->FilterKeypointsAndLandmarks(state_->kps, state_->landmarks, tracking_mask);
+
+        // Localize
+        cv::Mat R, t;
+        extractor_->EstimateMotion(state_->kps, state_->landmarks, R, t);
+        cv::Point3f pos = extractor_->ComputePosition(R, t);
+        state_->trajectory.push_back(pos);
+
+        // Triangulate new landmarks
+
+        // Extract new keypoints
+
+        // Visualize
         visualizer_->UpdateRender(frame_curr);
+        cv::waitKey(1000);
     }
 }

@@ -12,6 +12,7 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/calib3d.hpp>
+#include <opencv2/video/tracking.hpp>
 
 class Extractor {
  public:
@@ -40,8 +41,14 @@ class Extractor {
                                         std::vector<cv::Point2f> keypoints_2,
                                         cv::Mat& R1, cv::Mat& t1,
                                         cv::Mat& R2, cv::Mat& t2);
+   std::vector<uchar> TrackKeypoints(std::shared_ptr<cv::Mat> frame_curr, 
+                                     std::vector<cv::Point2f>& keypoints);  
+   void FilterKeypointsAndLandmarks(std::vector<cv::Point2f>& keypoints,
+                                    std::vector<cv::Point3f>& landmarks,
+                                    std::vector<uchar>& mask);
  private:
    cv::Mat K_;
+   cv::Mat frame_prev_;
    cv::Ptr<cv::SIFT> sift_;
    cv::Ptr<cv::DescriptorMatcher> matcher_;
 };

@@ -15,6 +15,8 @@ void Visualizer::DrawKeyPoints() {
 }
 
 void Visualizer::UpdateRender(std::shared_ptr<cv::Mat> current_frame) {
+    // TODO: More efficient way to visualize...
+    
     // Draw keypoints
     current_vis_ = current_frame->clone();
     DrawKeyPoints();
