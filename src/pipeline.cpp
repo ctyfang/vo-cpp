@@ -6,7 +6,8 @@ Pipeline::Pipeline(const cv::FileStorage& param_node) {
         dataloader_ = std::make_shared<KittiLoader>(std::string(param_node["root_dir"]), param_node["buffer_size"]);
     }
 
-    extractor_ = std::make_unique<Extractor>();
+    state_ = std::make_shared<State>();
+    extractor_ = std::make_unique<Extractor>(dataloader_->K_);
     visualizer_ = std::make_unique<Visualizer>(state_);
 }
 
@@ -57,12 +58,21 @@ void Pipeline::Initialize() {
     extractor_->FilterKeypoints(cv_kp_1, cv_kp_2, matches, kp_1_m, kp_2_m, kp_1_nm, kp_2_nm);
 
     cv::Mat R, t;
-    extractor_->EstimateMotion(kp_1_m, kp_2_m, dataloader_->K_, R, t);
-    std::cout << R << "\n";
-    std::cout << t << "\n";
- 
-    // Landmark creation
+    extractor_->EstimateMotion(kp_1_m, kp_2_m, R, t);
 
+    state_->kps.insert(state_->kps.end(), kp_1_m.begin(), kp_1_m.end());
+    state_->kps_candidate.insert(state_->kps_candidate.end(), kp_2_nm.begin(), kp_2_nm.end());
+
+    cv::Point3f pos = extractor_->ComputePosition(R, t);
+    state_->trajectory.push_back(pos);
+
+    // Landmark creation
+    cv::Mat R0 = cv::Mat::eye(3, 3, CV_32F);
+    cv::Mat t0 = cv::Mat::zeros(3, 1, CV_32F);
+    std::vector<cv::Point3f> landmarks_new = extractor_->Triangulate(kp_1_m, kp_2_m,
+                                                                     R0, t0, R, t);
+
+    state_->landmarks.insert(state_->landmarks.begin(), landmarks_new.begin(), landmarks_new.end());
     // Visualize
     visualizer_->UpdateRender(frame_2);
 }

@@ -55,7 +55,7 @@ void KittiLoader::ParseCalibration(std::string calib_path) {
         P0_elems.push_back(item);
     }
 
-    this->K_ = cv::Mat::eye(3, 3, CV_32F);
+    this->K_ = cv::Mat::eye(3, 3, CV_32FC1);
     this->K_.at<float>(0, 0) = std::stof(P0_elems[1]);
     this->K_.at<float>(0, 2) = std::stof(P0_elems[3]);
     this->K_.at<float>(1, 1) = std::stof(P0_elems[6]);
