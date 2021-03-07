@@ -15,14 +15,14 @@ namespace plt = matplotlibcpp;
 
 class Visualizer {
  public:
-   Visualizer(std::shared_ptr<State> state);
-   void UpdateRender(std::shared_ptr<cv::Mat> current_frame);
+    Visualizer(std::shared_ptr<State> state);
+    void UpdateRender(std::shared_ptr<cv::Mat> current_frame);
  private:
    void DrawKeyPoints();
 
-   cv::Mat current_vis_;
-   std::shared_ptr<State> state_;
-   std::unique_ptr<plt::Plot> plot_;
+    cv::Mat current_vis_;
+    std::vector<int> landmark_length_history_;
+    std::shared_ptr<State> state_;
 };
 
 #endif  // VISUALIZER_H_

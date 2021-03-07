@@ -2,7 +2,6 @@
 
 Visualizer::Visualizer(std::shared_ptr<State> state) {
     state_ = state;
-    // plot_ = std::make_unique<plot::Plot>("Visualization");
 }
 
 void Visualizer::DrawKeyPoints() {
@@ -35,6 +34,9 @@ void Visualizer::UpdateRender(std::shared_ptr<cv::Mat> current_frame) {
         lm_z.push_back(lm.z);
     }
 
+    // Record number of landmarks
+    landmark_length_history_.push_back(state_->landmarks.size());
+
     // Plots
     plt::title("Visualization");
     std::map<std::string, std::string> lm_settings, traj_settings;
@@ -45,11 +47,11 @@ void Visualizer::UpdateRender(std::shared_ptr<cv::Mat> current_frame) {
     plt::imshow(current_vis_.data, current_vis_.rows, current_vis_.cols, 3);
 
     plt::subplot(2, 4, 5);
-    plt::scatter(lm_x, lm_z, 2.0, lm_settings);
-    plt::scatter(pos_x, pos_z, 2.0, traj_settings);
+    plt::plot(landmark_length_history_, lm_settings);
 
     plt::subplot(2, 4, 6);
     plt::scatter(lm_x, lm_z, 2.0, lm_settings);
+    plt::scatter(pos_x, pos_z, 2.0, traj_settings);
 
     plt::subplot(1, 2, 2);
     plt::scatter(lm_x, lm_z, 2.0, lm_settings);

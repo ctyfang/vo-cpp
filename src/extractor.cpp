@@ -113,6 +113,8 @@ cv::Point3f Extractor::ComputePosition(cv::Mat& R, cv::Mat& t) {
     return cv::Point3f(pos_mat.at<float>(0, 0), pos_mat.at<float>(1, 0), pos_mat.at<float>(2, 0));
 }
 
+
+
 std::vector<cv::Point3f> Extractor::Triangulate(std::vector<cv::Point2f> keypoints_1,
                                                 std::vector<cv::Point2f> keypoints_2,
                                                 cv::Mat& R1, cv::Mat& t1,
@@ -129,8 +131,6 @@ std::vector<cv::Point3f> Extractor::Triangulate(std::vector<cv::Point2f> keypoin
     // Triangulate
     cv::Mat landmarks_homo(4, keypoints_1.size(), CV_32F);
     cv::triangulatePoints(P1, P2, keypoints_1, keypoints_2, landmarks_homo);
-    
-    // TODO: Non-linear refinement
 
     // De-homogenize
     std::vector<cv::Point3f> landmarks;
@@ -140,6 +140,37 @@ std::vector<cv::Point3f> Extractor::Triangulate(std::vector<cv::Point2f> keypoin
                                         landmarks_homo.at<float>(1, i)/w,
                                         landmarks_homo.at<float>(2, i)/w));
     }
+
+    // Non-Linear Refinement
+    LMFunctor2 functor(landmarks.size(), landmarks.size()*3);
+    functor.P1 = P1;
+    functor.P2 = P2;
+    functor.kp_1 = keypoints_1;
+    functor.kp_2 = keypoints_2;     // TODO: Do this smarter..
+    Eigen::NumericalDiff<LMFunctor2> numDiff(functor);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<LMFunctor2>, double> lm(numDiff);
+
+    // Filter landmarks
+    Eigen::VectorXd x(functor.n_);
+    for (int i = 0; i < landmarks.size(); ++i) {
+        x(3*i) = landmarks[i].x;
+        x(3*i+1) = landmarks[i].y;
+        x(3*i+2) = landmarks[i].z;
+    }
+
+    std::cout << "\tx0: " << x(0) << std::endl;
+    std::cout << "\tx1: " << x(1) << std::endl;
+    std::cout << "\tx2: " << x(2) << std::endl;
+
+    lm.parameters.maxfev = 2000;
+    lm.parameters.xtol = 1e-10;
+    int ret = lm.minimize(x);
+    std::cout << "Finished LM opt!\n";
+    std::cout << "Status: " << ret << "\n";
+    std::cout << "Iters: " << lm.iter << "\n";
+    std::cout << "\tx0: " << x(0) << std::endl;
+    std::cout << "\tx1: " << x(1) << std::endl;
+    std::cout << "\tx2: " << x(2) << std::endl;
     return landmarks;
 }
 
