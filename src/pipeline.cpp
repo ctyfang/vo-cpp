@@ -84,6 +84,6 @@ void Pipeline::Update() {
 
         // Visualize
         visualizer_->UpdateRender(frame_curr);
-        cv::waitKey(1);
+        cv::waitKey(1000);
     }
 }

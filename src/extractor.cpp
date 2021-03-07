@@ -141,7 +141,45 @@ std::vector<cv::Point3f> Extractor::Triangulate(std::vector<cv::Point2f> keypoin
                                         landmarks_homo.at<float>(2, i)/w));
     }
 
-    // Non-Linear Refinement
+    // Filter landmarks
+    std::vector<cv::Point3f> landmarks_filt;
+    std::vector<cv::Point2f> kp_1_filt, kp_2_filt;
+    float err_thresh = 1.0;
+    int count = 0;
+    for (int i = 0; i < landmarks.size(); ++i) {
+        cv::Point3f l = landmarks[i];
+        cv::Mat l_vec = cv::Mat::ones(4, 1, CV_32F);
+        l_vec.at<float>(0, 0) = l.x;
+        l_vec.at<float>(0, 1) = l.y;
+        l_vec.at<float>(0, 2) = l.z;
+
+        cv::Mat p1_vec = P1 * l_vec;
+        p1_vec /= p1_vec.at<float>(0, 2);
+        cv::Point2f kp1_proj(p1_vec.at<float>(0, 0), p1_vec.at<float>(0, 1));
+
+        cv::Mat p2_vec = P2 * l_vec;
+        p2_vec /= p2_vec.at<float>(0, 2);
+        cv::Point2f kp2_proj(p2_vec.at<float>(0, 0), p2_vec.at<float>(0, 1));
+
+        cv::Point2f diff_1 = kp1_proj - keypoints_1[i];
+        cv::Point2f diff_2 = kp2_proj - keypoints_2[i];
+
+        float err_1 = cv::sqrt(diff_1.dot(diff_1));
+        float err_2 = cv::sqrt(diff_2.dot(diff_2));
+        float err_mean = 0.5*(err_1 + err_2);
+
+        if (err_mean < err_thresh) {
+            landmarks_filt.push_back(landmarks[i]);
+            kp_1_filt.push_back(keypoints_1[i]);
+            kp_2_filt.push_back(keypoints_2[i]);
+            count++;
+        }
+    }
+    landmarks = std::move(landmarks_filt);
+    keypoints_1 = std::move(kp_1_filt);
+    keypoints_2 = std::move(kp_2_filt);
+
+    // NL Refinement
     LMFunctor2 functor(landmarks.size(), landmarks.size()*3);
     functor.P1 = P1;
     functor.P2 = P2;
@@ -149,8 +187,6 @@ std::vector<cv::Point3f> Extractor::Triangulate(std::vector<cv::Point2f> keypoin
     functor.kp_2 = keypoints_2;     // TODO: Do this smarter..
     Eigen::NumericalDiff<LMFunctor2> numDiff(functor);
     Eigen::LevenbergMarquardt<Eigen::NumericalDiff<LMFunctor2>, double> lm(numDiff);
-
-    // Filter landmarks
     Eigen::VectorXd x(functor.n_);
     for (int i = 0; i < landmarks.size(); ++i) {
         x(3*i) = landmarks[i].x;
@@ -158,19 +194,16 @@ std::vector<cv::Point3f> Extractor::Triangulate(std::vector<cv::Point2f> keypoin
         x(3*i+2) = landmarks[i].z;
     }
 
-    std::cout << "\tx0: " << x(0) << std::endl;
-    std::cout << "\tx1: " << x(1) << std::endl;
-    std::cout << "\tx2: " << x(2) << std::endl;
-
     lm.parameters.maxfev = 2000;
     lm.parameters.xtol = 1e-10;
     int ret = lm.minimize(x);
-    std::cout << "Finished LM opt!\n";
-    std::cout << "Status: " << ret << "\n";
-    std::cout << "Iters: " << lm.iter << "\n";
-    std::cout << "\tx0: " << x(0) << std::endl;
-    std::cout << "\tx1: " << x(1) << std::endl;
-    std::cout << "\tx2: " << x(2) << std::endl;
+
+    for (int i = 0; i < landmarks.size(); ++i) {
+        landmarks[i].x = x(3*i);
+        landmarks[i].y = x(3*i+1);
+        landmarks[i].z = x(3*i+2);
+    }
+
     return landmarks;
 }
 

@@ -84,11 +84,11 @@ struct LMFunctor2 : Functor<double>
 
          cv::Mat p1_vec = P1 * l_vec;
          p1_vec /= p1_vec.at<float>(0, 2);
-         cv::Point2f kp1_proj(p1_vec.at<float>(0, 1), p1_vec.at<float>(0, 2));
+         cv::Point2f kp1_proj(p1_vec.at<float>(0, 0), p1_vec.at<float>(0, 1));
 
          cv::Mat p2_vec = P2 * l_vec;
          p2_vec /= p2_vec.at<float>(0, 2);
-         cv::Point2f kp2_proj(p2_vec.at<float>(0, 1), p2_vec.at<float>(0, 2));
+         cv::Point2f kp2_proj(p2_vec.at<float>(0, 0), p2_vec.at<float>(0, 1));
 
          cv::Point2f diff_1 = kp1_proj - kp_1[i];
          cv::Point2f diff_2 = kp2_proj - kp_2[i];
